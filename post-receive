@@ -1,0 +1,30 @@
+#!/bin/sh
+# Reset source tree to the pushed commit.
+#
+# This is a Git server-side post-receive hook.
+#
+# Git Hooks in https://github.com/djboni/git-hooks
+
+# Name of the branch that is checked out in the source tree.
+# This branch must not be pushed.
+COMPILEBRANCH=compile
+
+# Read stdin (last top, current top, branch) and split
+read DATA
+LASTTOP=$(echo "$DATA" | cut -d' ' -f 1)
+CURRTOP=$(echo "$DATA" | cut -d' ' -f 2)
+BRANCH=$(echo "$DATA" | cut -d' ' -f 3)
+
+# Update Git directory variable and go to souce tree
+GIT_DIR="${PWD##*/}"
+cd ..
+
+# Reset source tree to the pushed commit
+git checkout -B "$COMPILEBRANCH"
+git reset --hard "$CURRTOP"
+git clean -f -d
+echo "Branch '$COMPILEBRANCH' reset to '$BRANCH':"
+echo "  commit '$CURRTOP'."
+
+# Compilation trigger
+# ...
