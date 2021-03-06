@@ -1,15 +1,24 @@
 #!/bin/sh
 # Checkout source tree to the pushed commit when pushing into the branch
-# defined in TRIGGER_BRANCH (default = compile).
+# defined in TRIGGER_BRANCH (default = compile). A remote compilation or
+# a unit test can also be triggered.
 #
 # This is a Git server-side post-receive hook.
 #
 # Git Hooks in https://github.com/djboni/git-hooks
+#
+# Example of client triggering a checkout:
+# $ git push origin HEAD:compile
+#            |      |    |
+#            |      |    v
+#            |      v    remote branch to push into
+#            v      local reference being pushed
+#            remote repository
 
-# Name of the branch that triggers the checkout in the push.
+# Chckout branch name (push into this branch to trigger a checkout).
 TRIGGER_BRANCH=compile
 
-# Name of the branch used to checkout the pushed commit.
+# Source tree branch name (branch active in the source tree).
 # This branch cannot not be pushed.
 CHECKOUT_BRANCH=last_compile
 
@@ -25,11 +34,11 @@ if [ "$BRANCH" = "refs/heads/$TRIGGER_BRANCH" ]; then
   # Expecting to be in directory SOURCE_TREE/.git
   GIT_DIR="$PWD"
   cd ..
-  
+
   echo "################################################################"
   echo "Checking-out commit pushed to '$BRANCH': "
   #git show --abbrev-commit --oneline --no-patch "$CURRTOP"
-  
+
   # Stash changes (just to be safe not to lose anything important)
   # git stash push --include-untracked -m "Automatic checkout on branch '$BRANCH'"
   git stash save --include-untracked "Automatic checkout on branch '$BRANCH'"
@@ -39,13 +48,16 @@ if [ "$BRANCH" = "refs/heads/$TRIGGER_BRANCH" ]; then
   git reset --hard "$CURRTOP"
   git clean --quiet -d --force
   #git status --branch --short
-  
+
   #echo "Branch '$CHECKOUT_BRANCH' reset to '$BRANCH'"
   #echo "  commit '$CURRTOP'."
-  
+
   echo "################################################################"
 
   # Compilation trigger
+  # ...
+
+  # Unit test trigger
   # ...
 
 fi
