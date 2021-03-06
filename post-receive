@@ -1,30 +1,51 @@
 #!/bin/sh
-# Reset source tree to the pushed commit.
+# Checkout source tree to the pushed commit when pushing into the branch
+# defined in TRIGGER_BRANCH (default = compile).
 #
 # This is a Git server-side post-receive hook.
 #
 # Git Hooks in https://github.com/djboni/git-hooks
 
-# Name of the branch that is checked out in the source tree.
-# This branch must not be pushed.
-COMPILEBRANCH=compile
+# Name of the branch that triggers the checkout in the push.
+TRIGGER_BRANCH=compile
 
-# Read stdin (last top, current top, branch) and split
+# Name of the branch used to checkout the pushed commit.
+# This branch cannot not be pushed.
+CHECKOUT_BRANCH=last_compile
+
+# Read stdin (last top, current top, branch) and split them
 read DATA
 LASTTOP=$(echo "$DATA" | cut -d' ' -f 1)
 CURRTOP=$(echo "$DATA" | cut -d' ' -f 2)
 BRANCH=$(echo "$DATA" | cut -d' ' -f 3)
 
-# Update Git directory variable and go to souce tree
-GIT_DIR="${PWD##*/}"
-cd ..
+if [ "$BRANCH" = "refs/heads/$TRIGGER_BRANCH" ]; then
 
-# Reset source tree to the pushed commit
-git checkout -B "$COMPILEBRANCH"
-git reset --hard "$CURRTOP"
-git clean -f -d
-echo "Branch '$COMPILEBRANCH' reset to '$BRANCH':"
-echo "  commit '$CURRTOP'."
+  # Update Git directory variable and go to souce tree
+  # Expecting to be in directory SOURCE_TREE/.git
+  GIT_DIR="$PWD"
+  cd ..
+  
+  echo "################################################################"
+  echo "Checking-out commit pushed to '$BRANCH': "
+  #git show --abbrev-commit --oneline --no-patch "$CURRTOP"
+  
+  # Stash changes (just to be safe not to lose anything important)
+  # git stash push --include-untracked -m "Automatic checkout on branch '$BRANCH'"
+  git stash save --include-untracked "Automatic checkout on branch '$BRANCH'"
 
-# Compilation trigger
-# ...
+  # Reset source tree to the pushed commit
+  git checkout --quiet -B "$CHECKOUT_BRANCH"
+  git reset --hard "$CURRTOP"
+  git clean --quiet -d --force
+  #git status --branch --short
+  
+  #echo "Branch '$CHECKOUT_BRANCH' reset to '$BRANCH'"
+  #echo "  commit '$CURRTOP'."
+  
+  echo "################################################################"
+
+  # Compilation trigger
+  # ...
+
+fi
